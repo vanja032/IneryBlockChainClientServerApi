@@ -1,0 +1,6 @@
+{
+  "host": "127.0.0.1",
+  "port_blocks": 55555,
+  "port_api": 55554,
+  "server_queue_size": 2048
+}
