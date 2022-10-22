@@ -11,7 +11,7 @@ class SERVER:
         file = open('config.json')
         config = json.load(file)
         self.HOST = config['host']
-        self.PORT = config['port']
+        self.PORT = config['port_blocks']
         self.PEER_LIST = {}
 
     async def LISTEN_AND_ACCEPT(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
