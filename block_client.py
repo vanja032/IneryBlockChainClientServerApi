@@ -2,8 +2,8 @@ import asyncio
 from asyncore import write
 import time
 
-host = '127.0.0.1'
-PORT = 55555
+host_addr = '127.0.0.1'
+port_num = 55555
 
 async def handle_echo(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     data = None
@@ -21,12 +21,12 @@ async def handle_echo(reader: asyncio.StreamReader, writer: asyncio.StreamWriter
 
 
 async def run_client() -> None:
-    reader, writer = await asyncio.open_connection(HOST, PORT)
+    reader, writer = await asyncio.open_connection(host_addr, port_num)
 
     await writer.drain()
 
     while True:
-        data = await reader.read(1024)
+        data = await reader.read(2048)
 
         if not data:
             raise Exception("socket closed")
