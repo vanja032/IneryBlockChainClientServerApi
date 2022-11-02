@@ -1,55 +1,56 @@
 import asyncio
-import threading
 import json
-from parsedata import parse
 import subprocess
+import threading
 
-class SERVER:
+from parsedata import parse
+
+
+class Server:
 
     def __init__(self):
-        
         file = open('config.json')
         config = json.load(file)
-        self.HOST = config['host']
-        self.PORT = config['port_blocks']
-        self.PEER_LIST = {}
+        self.host = config['host']
+        self.port = config['port_blocks']
+        self.peer_list = {}
 
-    async def LISTEN_AND_ACCEPT(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    async def listen_and_accept(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         data = None
         msg = ""
         addr, port = "", ""
-        #PEER_LIST2 = {}
-        
         addr, port = writer.get_extra_info("peername")
-        self.PEER_LIST[str(addr)+':'+str(port)] = (reader, writer)
+        self.peer_list[str(addr)+':'+str(port)] = (reader, writer)
 
-        #PEER_LIST2 = self.PEER_LIST.copy()
-        #for el in PEER_LIST2:
-        #    print(el)
-
-    async def RUN_SERVER(self) -> None:
+    async def run_server(self) -> None:
         #print("Server listen started")
-        server = await asyncio.start_server(self.LISTEN_AND_ACCEPT, self.HOST, self.PORT)
-        
+        server = await asyncio.start_server(self.listen_and_accept, self.host, self.port)
+
         async with server:
             await server.serve_forever()
 
-    async def SEND_DATA(self):
+    async def send_data(self):
         PEER_LIST2 = {}
         with open('nodine.log', "r") as f1:
             while True:
-                PEER_LIST2 = self.PEER_LIST.copy()
+                peer_list2 = self.peer_list.copy()
                 last_line = ""
                 try:
-                    last_line = f1.readlines()[-1]
+                    last_line = f1.readlines()[-1:][0]
+                    #print(last_line)
                 except:
                     continue
-                data = parse(last_line)
-                if data == "":
+                try:
+                    data = parse(last_line)
+                    if data == "":
+                        continue
+                except Exception as e:
+                    #print("First exception " + str(e))
                     continue
+
                 for el in PEER_LIST2:
                     try:
-                        reader, writer = PEER_LIST2[el]
+                        reader, writer = peer_list2[el]
                         addr, port = writer.get_extra_info("peername")
                         if writer.is_closing():
                             raise Exception("Socket closed")
@@ -58,20 +59,20 @@ class SERVER:
                         await writer.drain()
                         #print(f'Sending data: {data}')
                     except Exception as e:
-                        #print("A" + str(e))
+                        print("Second exception " + str(e))
                         try:
                             return_query = subprocess.run(["fuser", "-k", str(port) + "/tcp"])
-                            reader, writer = PEER_LIST2[el]
-                            self.PEER_LIST.pop(el)
+                            reader, writer = peer_list2[el]
+                            self.peer_list.pop(el)
                             #print(f'Removing connection: {el}')
                         except Exception as e:
-                            #print("B" + str(e))
+                            print("Third exception " + str(e))
                             continue
         #print("Closed file")
-                
+
 if __name__ == '__main__':
-    server = SERVER()
-    _thread = threading.Thread(target=asyncio.run, args=(server.SEND_DATA(),))
+    server = Server()
+    _thread = threading.Thread(target=asyncio.run, args=(server.send_data(),))
     _thread.start()
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(server.RUN_SERVER())
+    loop.run_until_complete(server.run_server())
